@@ -1,6 +1,6 @@
 use db::{get_connection, get_work};
 use manager::{Manager, ManagerUrl};
-use actix::Actor;
+use actix::{Actor, System};
 
 mod db;
 mod manager;
@@ -9,14 +9,14 @@ mod utils;
 mod worker;
 
 fn main() {
-    let sys = actix::System::new("actix");
+    let sys = System::new("actix");
 
     let conn = get_connection();
     let manager = Manager::new(10).start();
-    let proxies = get_work(&conn, 1000);
-
+    let proxies = get_work(&conn, 20);
+    println!("{}", proxies.len());
     for proxy in proxies {
-        let _ = manager.send(ManagerUrl{ url: proxy });
+        manager.do_send(ManagerUrl{ url: proxy });
     }
 
     let _ = sys.run();
