@@ -60,7 +60,7 @@ pub fn get_work(conn: &Connection, num: i64) -> Vec<String> {
         FROM
             proxies
         WHERE
-            work = true AND 
+            work = true AND random() < 0.01
         LIMIT $1",
         &[&num],
     ) {
