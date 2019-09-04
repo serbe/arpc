@@ -1,14 +1,13 @@
-use actix::{Actor, Addr, AsyncContext, Context, Handler, Message};
+use actix::{Actor, Addr, AsyncContext, ActorContext, System, Context, Handler, Message};
 use crossbeam::queue::SegQueue;
-// use std::{thread};
 use std::time::{Duration};
 
-use crate::worker::{Worker, WorkerUrl};
+use crate::worker::{Worker, WorkerUrl, Quit};
 
 pub struct Manager {
     sq: SegQueue<String>,
     workers: SegQueue<Addr<Worker>>,
-    num_workers: i64,
+    num_workers: usize,
 }
 
 impl Actor for Manager {
@@ -19,18 +18,29 @@ impl Actor for Manager {
             Worker::new(n, ctx.address()).start();
         };
 
-        ctx.run_interval(Duration::from_millis(110), move |act, _ctx| {
+        ctx.run_interval(Duration::from_millis(51), move |act, ctx| {
             if act.sq.len() > 0 && act.workers.len() > 0  {
                 let url = act.sq.pop().unwrap();
                 let worker = act.workers.pop().unwrap();
+                println!("sq len {} workers free {}", act.sq.len(), act.workers.len());
                 worker.do_send(WorkerUrl{url});
+            } else if act.sq.len() == 0 && act.workers.len() == act.num_workers {
+                ctx.stop();
             }
         });
+    }
+
+    fn stopped(&mut self, _ctx: &mut Self::Context) {
+        println!("stop manager");
+        while !self.workers.is_empty() {
+            self.workers.pop().unwrap().do_send(Quit{});
+        }
+        System::current().stop();
     }
 }
 
 impl Manager {
-    pub fn new(num: i64) -> Self {
+    pub fn new(num: usize) -> Self {
         let sq = SegQueue::new();
         let workers = SegQueue::new();
         Manager { sq, workers, num_workers: num }
@@ -73,7 +83,7 @@ impl Message for ManagerUrl {
 }
 
 pub struct WorkRequest {
-    pub id: i64,
+    pub id: usize,
     pub worker: Addr<Worker>,
 }
 
