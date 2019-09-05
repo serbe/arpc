@@ -1,9 +1,9 @@
-use actix::{Actor, System};
+use actix::{Actor, SyncArbiter, System};
 use dotenv::{dotenv, var};
 
 use crate::db::{get_connection, get_work, DBSaver};
 use crate::manager::Manager;
-use crate::messages::UrlMsg;
+use crate::messages::{UrlMsg, WorkersAddr};
 use crate::utils::my_ip;
 use crate::worker::Worker;
 
@@ -16,26 +16,26 @@ mod worker;
 
 fn main() {
     dotenv().ok();
+    let my_ip = my_ip().unwrap();
+    let target = var("TARGET").unwrap();
+    let num_workers = var("WORKERS").unwrap().parse::<usize>().unwrap();
     let sys = System::new("actix");
     let pool = get_connection();
     let db_saver = DBSaver::new(pool.clone()).start();
-    let num_workers = var("WORKERS").unwrap().parse::<usize>().unwrap();
-    let manager = Manager::new(num_workers.clone()).start();
-    let my_ip = my_ip().unwrap();
-    let target = var("TARGET").unwrap();
-    for n in 0..num_workers {
+    let manager = Manager::new(num_workers).start();
+    let manager_addr = manager.clone();
+    let workers = SyncArbiter::start(num_workers, move || {
         Worker::new(
-            n,
-            manager.clone(),
+            manager_addr.clone(),
             db_saver.clone(),
             my_ip.clone(),
             target.clone(),
         )
-        .start();
-    }
+    });
+    manager.do_send(WorkersAddr { addr: workers });
 
-    let proxies = get_work(&pool.get().unwrap(), 20);
-    // println!("{}", proxies.len());
+    let proxies = get_work(&pool.get().unwrap(), 100);
+    println!("{}", proxies.len());
     for url in proxies {
         manager.do_send(UrlMsg { url });
     }

@@ -10,7 +10,7 @@ edition = "2018"
 actix = "0.8"
 actix-web = "1.0"
 chrono = "0.4"
-crossbeam = "0.7"
+crossbeam-queue = "0.1"
 dotenv = "0.14"
 futures = "0.1"
 postgres = { version = "0.15", features = ["with-chrono"] }

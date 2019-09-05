@@ -17,12 +17,9 @@ impl Message for QuitMsg {
     type Result = ();
 }
 
-pub struct WorkerMsg {
-    pub id: usize,
-    pub worker: Addr<Worker>,
-}
+pub struct Waiting;
 
-impl Message for WorkerMsg {
+impl Message for Waiting {
     type Result = ();
 }
 
@@ -31,5 +28,13 @@ pub struct ProxyMsg {
 }
 
 impl Message for ProxyMsg {
+    type Result = ();
+}
+
+pub struct WorkersAddr {
+    pub addr: Addr<Worker>,
+}
+
+impl Message for WorkersAddr {
     type Result = ();
 }

@@ -24,9 +24,12 @@ impl Actor for DBSaver {
 impl Handler<ProxyMsg> for DBSaver {
     type Result = ();
 
-    fn handle(&mut self, msg: ProxyMsg, _: &mut Context<Self>) {
+    fn handle(&mut self, msg: ProxyMsg, _ctx: &mut Context<Self>) {
         match insert_or_update(&self.db.get().unwrap(), msg.proxy.clone()) {
-            Ok(num) => println!("{} check {} work={} anon={}", num, msg.proxy.hostname, msg.proxy.work, msg.proxy.anon),
+            Ok(_num) => println!(
+                "{} work={} anon={} response={}",
+                msg.proxy.hostname, msg.proxy.work, msg.proxy.anon, msg.proxy.response
+            ),
             Err(err) => println!("error in db {}", err),
         }
     }
@@ -62,7 +65,7 @@ pub fn get_work(conn: &Connection, num: i64) -> Vec<String> {
         FROM
             proxies
         WHERE
-            work = true AND random() < 0.01
+            work = true AND update_at < (NOW() - interval '1 hour') AND random() < 0.01
         LIMIT $1",
         &[&num],
     ) {
