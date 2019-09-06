@@ -1,19 +1,19 @@
 use actix::{Actor, ActorContext, Addr, Handler, SyncContext};
 
-use crate::db::DBSaver;
+use crate::db::DbActor;
 use crate::manager::Manager;
 use crate::messages::{ProxyMsg, QuitMsg, UrlMsg, Waiting};
 use crate::proxy::{check_proxy, Proxy};
 
 pub struct Worker {
     manager: Addr<Manager>,
-    db: Addr<DBSaver>,
+    db: Addr<DbActor>,
     my_ip: String,
     target: String,
 }
 
 impl Worker {
-    pub fn new(manager: Addr<Manager>, db: Addr<DBSaver>, my_ip: String, target: String) -> Self {
+    pub fn new(manager: Addr<Manager>, db: Addr<DbActor>, my_ip: String, target: String) -> Self {
         Worker {
             manager,
             db,
@@ -35,12 +35,10 @@ impl Handler<UrlMsg> for Worker {
     type Result = ();
 
     fn handle(&mut self, msg: UrlMsg, _ctx: &mut SyncContext<Self>) -> Self::Result {
-        if let Ok(proxy) = Proxy::from(&msg.url) {
+        if let Ok(proxy) = Proxy::from(&msg.0) {
             match check_proxy(proxy.clone(), &self.target, &self.my_ip) {
-                Ok(checked_proxy) => self.db.do_send(ProxyMsg {
-                    proxy: checked_proxy,
-                }),
-                Err(_err) => self.db.do_send(ProxyMsg { proxy }),
+                Ok(checked_proxy) => self.db.do_send(ProxyMsg(checked_proxy)),
+                Err(_err) => self.db.do_send(ProxyMsg(proxy)),
             }
         }
         self.manager.do_send(Waiting {});

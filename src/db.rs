@@ -7,30 +7,30 @@ use r2d2_postgres::{PostgresConnectionManager, TlsMode};
 use crate::messages::ProxyMsg;
 use crate::proxy::Proxy;
 
-pub struct DBSaver {
+pub struct DbActor {
     pub db: Pool<PostgresConnectionManager>,
 }
 
-impl DBSaver {
+impl DbActor {
     pub fn new(db: Pool<PostgresConnectionManager>) -> Self {
-        DBSaver { db }
+        DbActor { db }
     }
 }
 
-impl Actor for DBSaver {
+impl Actor for DbActor {
     type Context = Context<Self>;
 }
 
-impl Handler<ProxyMsg> for DBSaver {
+impl Handler<ProxyMsg> for DbActor {
     type Result = ();
 
     fn handle(&mut self, msg: ProxyMsg, _ctx: &mut Context<Self>) {
-        match insert_or_update(&self.db.get().unwrap(), msg.proxy.clone()) {
+        match insert_or_update(&self.db.get().unwrap(), msg.0.clone()) {
             Ok(_num) => {
-                if msg.proxy.work {
+                if msg.0.work {
                     println!(
                         "{} work={} anon={} response={}",
-                        msg.proxy.hostname, msg.proxy.work, msg.proxy.anon, msg.proxy.response
+                        msg.0.hostname, msg.0.work, msg.0.anon, msg.0.response
                     )
                 }
             }

@@ -40,7 +40,7 @@ impl Actor for Manager {
                 if act.db.insert(url.clone(), b"") == Ok(None) {
                     if let Some(workers) = &act.workers {
                         act.free_workers -= 1;
-                        workers.do_send(UrlMsg { url });
+                        workers.do_send(UrlMsg(url));
                     }
                 }
             } else if act.sq.is_empty() && act.free_workers == act.num_workers {
@@ -58,7 +58,7 @@ impl Handler<UrlMsg> for Manager {
     type Result = ();
 
     fn handle(&mut self, msg: UrlMsg, _: &mut Context<Self>) {
-        self.sq.push(msg.url);
+        self.sq.push(msg.0);
     }
 }
 
@@ -74,6 +74,6 @@ impl Handler<WorkersAddr> for Manager {
     type Result = ();
 
     fn handle(&mut self, msg: WorkersAddr, _: &mut Context<Self>) {
-        self.workers = Some(msg.addr);
+        self.workers = Some(msg.0);
     }
 }

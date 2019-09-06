@@ -14,15 +14,11 @@ pub fn post_url_list(
     let mut num = 0;
     for url in url_list {
         if url.contains("://") {
-            manager.do_send(UrlMsg { url });
+            manager.do_send(UrlMsg(url));
             num += 1;
         } else {
-            manager.do_send(UrlMsg {
-                url: format!("http://{}", url),
-            });
-            manager.do_send(UrlMsg {
-                url: format!("socks5://{}", url),
-            });
+            manager.do_send(UrlMsg(format!("http://{}", url)));
+            manager.do_send(UrlMsg(format!("socks5://{}", url)));
             num += 2;
         }
     }
@@ -30,8 +26,9 @@ pub fn post_url_list(
 }
 
 pub fn check_type(
-    // manager: web::Data<Addr<Manager>>,
-    // path: web::Path<String>,
+    manager: web::Data<Addr<Manager>>,
+    path: web::Path<String>,
 ) -> HttpResponse {
+    
     HttpResponse::new(StatusCode::OK)
 }

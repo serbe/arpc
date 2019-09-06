@@ -3,9 +3,7 @@ use actix::{Addr, Message};
 use crate::proxy::Proxy;
 use crate::worker::Worker;
 
-pub struct UrlMsg {
-    pub url: String,
-}
+pub struct UrlMsg(pub String);
 
 impl Message for UrlMsg {
     type Result = ();
@@ -23,18 +21,25 @@ impl Message for Waiting {
     type Result = ();
 }
 
-pub struct ProxyMsg {
-    pub proxy: Proxy,
-}
+pub struct ProxyMsg(pub Proxy);
 
 impl Message for ProxyMsg {
     type Result = ();
 }
 
-pub struct WorkersAddr {
-    pub addr: Addr<Worker>,
-}
+pub struct WorkersAddr(pub Addr<Worker>);
 
 impl Message for WorkersAddr {
     type Result = ();
+}
+
+pub struct UrlGetterMsg {
+    pub limit: i64,
+    pub anon: bool,
+    pub work: bool,
+    pub hours: i64,
+}
+
+impl Message for UrlGetterMsg {
+    type Result = Vec<String>;
 }
