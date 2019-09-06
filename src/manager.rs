@@ -1,4 +1,4 @@
-use actix::{Actor, ActorContext, Addr, AsyncContext, Context, Handler, System};
+use actix::{Actor, Addr, AsyncContext, Context, Handler, System};
 use crossbeam_queue::SegQueue;
 use dotenv::var;
 use sled::Db;
@@ -12,11 +12,11 @@ pub struct Manager {
     db: Db,
     workers: Option<Addr<Worker>>,
     free_workers: usize,
-    num_workers: usize,
+    // num_workers: usize,
 }
 
 impl Manager {
-    pub fn new(num: usize) -> Self {
+    pub fn new() -> Self {
         let sq = SegQueue::new();
         let sled_db = var("SLED").expect("SLED must be set");
         let db = Db::open(sled_db).unwrap();
@@ -25,7 +25,7 @@ impl Manager {
             db,
             workers: None,
             free_workers: 0,
-            num_workers: num,
+            // num_workers: num,
         }
     }
 }
@@ -34,7 +34,7 @@ impl Actor for Manager {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        ctx.run_interval(Duration::from_millis(51), move |act, ctx| {
+        ctx.run_interval(Duration::from_millis(51), move |act, _ctx| {
             if !act.sq.is_empty() && act.free_workers > 0 {
                 let url = act.sq.pop().unwrap();
                 if act.db.insert(url.clone(), b"") == Ok(None) {
@@ -43,9 +43,10 @@ impl Actor for Manager {
                         workers.do_send(UrlMsg(url));
                     }
                 }
-            } else if act.sq.is_empty() && act.free_workers == act.num_workers {
-                ctx.stop();
             }
+            //  else if act.sq.is_empty() && act.free_workers == act.num_workers {
+            // ctx.stop();
+            // }
         });
     }
 

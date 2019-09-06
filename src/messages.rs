@@ -35,9 +35,9 @@ impl Message for WorkersAddr {
 
 pub struct UrlGetterMsg {
     pub limit: i64,
-    pub anon: bool,
+    pub anon: Option<bool>,
     pub work: bool,
-    pub hours: i64,
+    pub hours: Option<i64>,
 }
 
 impl Message for UrlGetterMsg {
