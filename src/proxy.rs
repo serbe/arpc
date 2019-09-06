@@ -1,6 +1,6 @@
 use chrono::{DateTime, Local};
-use std::time::Instant;
 use reqwest::Client;
+use std::time::Instant;
 
 #[derive(Clone, Debug)]
 pub struct Proxy {
@@ -103,24 +103,22 @@ impl Proxy {
     }
 }
 
-pub fn check_proxy(proxy_url: &str, target_url: &str, my_ip: &str) -> Result<Proxy, String> {
+pub fn check_proxy(proxy: Proxy, target_url: &str, my_ip: &str) -> Result<Proxy, String> {
     let dur = Instant::now();
-    let mut proxy = Proxy::from(proxy_url)?;
+    let mut proxy = proxy;
     let transport = reqwest::Proxy::all(&proxy.hostname)
-        .map_err(|e| format!("set proxy {} error: {}", proxy_url, e.to_string()))?;
+        .map_err(|e| format!("set proxy {} error: {}", &proxy.hostname, e.to_string()))?;
     let client = Client::builder().proxy(transport).build().unwrap();
     let body = client
         .get(target_url)
         .send()
-        .map_err(|e| format!("get via {} {}", proxy_url, e.to_string()))?
+        .map_err(|e| format!("get via {} {}", &proxy.hostname, e.to_string()))?
         .text()
         .map_err(|e| format!("convert to text error {}", e.to_string()))?;
     proxy.work = true;
     if !body.contains(&my_ip) && body.matches("<p>").count() == 1 {
         proxy.anon = true;
     }
-    proxy.create_at = Local::now();
-    proxy.update_at = Local::now();
     proxy.response = dur.elapsed().as_micros() as i64;
     Ok(proxy)
 }

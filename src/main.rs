@@ -17,8 +17,11 @@ mod worker;
 fn main() {
     dotenv().ok();
     let my_ip = my_ip().unwrap();
-    let target = var("TARGET").unwrap();
-    let num_workers = var("WORKERS").unwrap().parse::<usize>().unwrap();
+    let target = var("TARGET").expect("TARGET must be set");
+    let num_workers = var("WORKERS")
+        .expect("WORKERS must be set")
+        .parse::<usize>()
+        .unwrap();
     let sys = System::new("actix");
     let pool = get_connection();
     let db_saver = DBSaver::new(pool.clone()).start();

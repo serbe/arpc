@@ -26,10 +26,14 @@ impl Handler<ProxyMsg> for DBSaver {
 
     fn handle(&mut self, msg: ProxyMsg, _ctx: &mut Context<Self>) {
         match insert_or_update(&self.db.get().unwrap(), msg.proxy.clone()) {
-            Ok(_num) => println!(
-                "{} work={} anon={} response={}",
-                msg.proxy.hostname, msg.proxy.work, msg.proxy.anon, msg.proxy.response
-            ),
+            Ok(_num) => {
+                if msg.proxy.work {
+                    println!(
+                        "{} work={} anon={} response={}",
+                        msg.proxy.hostname, msg.proxy.work, msg.proxy.anon, msg.proxy.response
+                    )
+                }
+            }
             Err(err) => println!("error in db {}", err),
         }
     }
@@ -61,7 +65,7 @@ pub fn get_work(conn: &Connection, num: i64) -> Vec<String> {
     let mut proxies = Vec::new();
     if let Ok(rows) = &conn.query(
         "SELECT
-            hostname, scheme
+            hostname
         FROM
             proxies
         WHERE
@@ -71,8 +75,7 @@ pub fn get_work(conn: &Connection, num: i64) -> Vec<String> {
     ) {
         for row in rows {
             let hostname: String = row.get(0);
-            let scheme: String = row.get(1);
-            proxies.push(format!("{}://{}", scheme, hostname));
+            proxies.push(hostname);
         }
     }
     proxies
