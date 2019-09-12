@@ -1,7 +1,7 @@
+use actix::io::FramedWrite;
 use actix::{
     Actor, Addr, AsyncContext, Context, Handler, Message, StreamHandler, SyncArbiter, System,
 };
-// use actix_web::{web, App, HttpServer};
 use dotenv::{dotenv, var};
 use futures::Stream;
 use std::net;
@@ -10,23 +10,17 @@ use tokio_codec::FramedRead;
 use tokio_io::AsyncRead;
 use tokio_tcp::{TcpListener, TcpStream};
 
+use crate::codec::ToServerCodec;
 use crate::db::{get_connection, DbActor};
-// use crate::handlers::{check_type, post_url_list};
 use crate::manager::Manager;
 use crate::messages::WorkersAddr;
-// use crate::server::RpcServer;
-use crate::utils::my_ip;
-use crate::worker::Worker;
-// use crate::session::RpcSession;
-// use crate::codec::RpcCodec;
-
-use crate::codec::ToServerCodec;
 use crate::server::ChatServer;
 use crate::session::ChatSession;
+use crate::utils::my_ip;
+use crate::worker::Worker;
 
 mod codec;
 mod db;
-// mod handlers;
 mod manager;
 mod messages;
 mod proxy;
@@ -68,12 +62,7 @@ impl Handler<TcpConnect> for Server {
         ChatSession::create(move |ctx| {
             let (r, w) = msg.0.split();
             ChatSession::add_stream(FramedRead::new(r, ToServerCodec), ctx);
-            ChatSession::new(
-                server,
-                manager,
-                db,
-                actix::io::FramedWrite::new(w, ToServerCodec, ctx),
-            )
+            ChatSession::new(server, manager, db, FramedWrite::new(w, ToServerCodec, ctx))
         });
     }
 }
@@ -140,20 +129,6 @@ fn main() {
     //     .map_err(|_| ());
 
     // actix::spawn(handle_shutdown);
-
-    // HttpServer::new(move || {
-    //     App::new()
-    //         .data(WebData {
-    //             db: data_db.clone(),
-    //             manager: data_manager.clone(),
-    //         })
-    //         .data(web::JsonConfig::default().limit(4096))
-    //         .service(web::resource("/post_url_list").route(web::post().to(post_url_list)))
-    //         .service(web::resource("/check/{type}/{limit}").route(web::get().to(check_type)))
-    // })
-    // .bind(&web_server_host)
-    // .unwrap()
-    // .start();
 
     let _ = sys.run();
 }

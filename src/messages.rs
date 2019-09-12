@@ -46,7 +46,7 @@ pub struct Connect {
 /// Response type for Connect message
 ///
 /// Chat server returns unique session id
-impl actix::Message for Connect {
+impl Message for Connect {
     type Result = usize;
 }
 

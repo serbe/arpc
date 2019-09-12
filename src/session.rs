@@ -1,6 +1,9 @@
-//! `ClientSession` is an actor, it manages peer tcp connection and
-//! proxies commands from peer to `ChatServer`.
-use actix::prelude::*;
+use actix::fut::ok;
+use actix::io::{FramedWrite, WriteHandler};
+use actix::{
+    Actor, ActorContext, ActorFuture, Addr, AsyncContext, Context, ContextFutureSpawner, Running,
+    StreamHandler, WrapFuture,
+};
 use std::io;
 use std::time::{Duration, Instant};
 use tokio_io::io::WriteHalf;
@@ -24,11 +27,11 @@ pub struct ChatSession {
     /// connection.
     hb: Instant,
     /// Framed wrapper
-    framed: actix::io::FramedWrite<WriteHalf<TcpStream>, ToServerCodec>,
+    framed: FramedWrite<WriteHalf<TcpStream>, ToServerCodec>,
 }
 
 impl Actor for ChatSession {
-    type Context = actix::Context<Self>;
+    type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
         // we'll start heartbeat process on session start.
@@ -48,7 +51,7 @@ impl Actor for ChatSession {
                     // something is wrong with chat server
                     _ => ctx.stop(),
                 }
-                actix::fut::ok(())
+                ok(())
             })
             .wait(ctx);
     }
@@ -60,7 +63,7 @@ impl Actor for ChatSession {
     }
 }
 
-impl actix::io::WriteHandler<io::Error> for ChatSession {}
+impl WriteHandler<io::Error> for ChatSession {}
 
 /// To use `Framed` with an actor, we have to implement `StreamHandler` trait
 impl StreamHandler<RpcRequestC, io::Error> for ChatSession {
@@ -76,7 +79,7 @@ impl StreamHandler<RpcRequestC, io::Error> for ChatSession {
                             Ok(url_list) => act.framed.write(RpcResponseC::Proxy(url_list)),
                             _ => println!("Something is wrong"),
                         }
-                        actix::fut::ok(())
+                        ok(())
                     })
                     .wait(ctx)
                 // .wait(ctx) pauses all events in context,
@@ -95,7 +98,7 @@ impl StreamHandler<RpcRequestC, io::Error> for ChatSession {
                             }
                             _ => println!("Something is wrong"),
                         }
-                        actix::fut::ok(())
+                        ok(())
                     })
                     .wait(ctx)
             }
@@ -122,7 +125,7 @@ impl ChatSession {
         server: Addr<ChatServer>,
         manager: Addr<Manager>,
         db: Addr<DbActor>,
-        framed: actix::io::FramedWrite<WriteHalf<TcpStream>, ToServerCodec>,
+        framed: FramedWrite<WriteHalf<TcpStream>, ToServerCodec>,
     ) -> ChatSession {
         ChatSession {
             server,
@@ -137,7 +140,7 @@ impl ChatSession {
     /// helper method that sends ping to client every second.
     ///
     /// also this method check heartbeats from client
-    fn hb(&self, ctx: &mut actix::Context<Self>) {
+    fn hb(&self, ctx: &mut Context<Self>) {
         ctx.run_later(Duration::new(1, 0), |act, ctx| {
             // check client heartbeats
             if Instant::now().duration_since(act.hb) > Duration::new(10, 0) {
