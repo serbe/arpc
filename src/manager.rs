@@ -15,6 +15,12 @@ pub struct Manager {
     // num_workers: usize,
 }
 
+impl Default for Manager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Manager {
     pub fn new() -> Self {
         let sq = SegQueue::new();
