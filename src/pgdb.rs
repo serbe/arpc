@@ -7,21 +7,21 @@ use r2d2_postgres::{PostgresConnectionManager, TlsMode};
 use crate::messages::{ProxyMsg, UrlGetterMsg};
 use crate::proxy::Proxy;
 
-pub struct DbActor {
+pub struct PgDb {
     pub db: Pool<PostgresConnectionManager>,
 }
 
-impl DbActor {
+impl PgDb {
     pub fn new(db: Pool<PostgresConnectionManager>) -> Self {
-        DbActor { db }
+        PgDb { db }
     }
 }
 
-impl Actor for DbActor {
+impl Actor for PgDb {
     type Context = Context<Self>;
 }
 
-impl Handler<ProxyMsg> for DbActor {
+impl Handler<ProxyMsg> for PgDb {
     type Result = ();
 
     fn handle(&mut self, msg: ProxyMsg, _ctx: &mut Context<Self>) {
@@ -39,7 +39,7 @@ impl Handler<ProxyMsg> for DbActor {
     }
 }
 
-impl Handler<UrlGetterMsg> for DbActor {
+impl Handler<UrlGetterMsg> for PgDb {
     type Result = MessageResult<UrlGetterMsg>;
 
     fn handle(&mut self, msg: UrlGetterMsg, _ctx: &mut Context<Self>) -> Self::Result {

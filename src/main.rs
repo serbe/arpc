@@ -1,71 +1,28 @@
-use actix::io::FramedWrite;
-use actix::{
-    Actor, Addr, AsyncContext, Context, Handler, Message, StreamHandler, SyncArbiter, System,
-};
+use actix::{Actor, AsyncContext, SyncArbiter, System};
 use dotenv::{dotenv, var};
 use futures::Stream;
 use std::net;
 use std::str::FromStr;
-use tokio_codec::FramedRead;
-use tokio_io::AsyncRead;
-use tokio_tcp::{TcpListener, TcpStream};
+use tokio_tcp::TcpListener;
 
-use crate::codec::ToServerCodec;
-use crate::db::{get_connection, DbActor};
 use crate::manager::Manager;
-use crate::messages::WorkersAddr;
-use crate::server::ChatServer;
-use crate::session::ChatSession;
+use crate::messages::{TcpConnect, WorkersAddr};
+use crate::pgdb::{get_connection, PgDb};
+use crate::rpcserver::RpcServer;
+use crate::tcpserver::TcpServer;
 use crate::utils::my_ip;
 use crate::worker::Worker;
 
 mod codec;
-mod db;
 mod manager;
 mod messages;
+mod pgdb;
 mod proxy;
-mod server;
+mod rpcserver;
 mod session;
+mod tcpserver;
 mod utils;
 mod worker;
-
-pub struct WebData {
-    pub db: Addr<DbActor>,
-    pub manager: Addr<Manager>,
-}
-
-struct Server {
-    chat: Addr<ChatServer>,
-    manager: Addr<Manager>,
-    db: Addr<DbActor>,
-}
-
-impl Actor for Server {
-    type Context = Context<Self>;
-}
-
-#[derive(Message)]
-struct TcpConnect(pub TcpStream, pub net::SocketAddr);
-
-/// Handle stream of TcpStream's
-impl Handler<TcpConnect> for Server {
-    /// this is response for message, which is defined by `ResponseType` trait
-    /// in this case we just return unit.
-    type Result = ();
-
-    fn handle(&mut self, msg: TcpConnect, _: &mut Context<Self>) {
-        // For each incoming connection we create `ChatSession` actor
-        // with out chat server address.
-        let server = self.chat.clone();
-        let manager = self.manager.clone();
-        let db = self.db.clone();
-        ChatSession::create(move |ctx| {
-            let (r, w) = msg.0.split();
-            ChatSession::add_stream(FramedRead::new(r, ToServerCodec), ctx);
-            ChatSession::new(server, manager, db, FramedWrite::new(w, ToServerCodec, ctx))
-        });
-    }
-}
 
 fn main() {
     dotenv().ok();
@@ -76,11 +33,9 @@ fn main() {
         .parse::<usize>()
         .unwrap();
     let server_host = var("SERVER").expect("SERVER must be set");
-    // let web_server_host = var("WEBSERVER").expect("WEBSERVER must be set");
     let sys = System::new("actix");
     let pool = get_connection();
-    let db_saver = DbActor::new(pool.clone()).start();
-    // let manager = Manager::new(num_workers).start();
+    let db_saver = PgDb::new(pool.clone()).start();
     let manager = Manager::new().start();
     let worker_manager = manager.clone();
     let worker_db = db_saver.clone();
@@ -94,28 +49,22 @@ fn main() {
     });
     manager.do_send(WorkersAddr(workers));
 
-    // let proxies = get_work(&pool.get().unwrap(), 100);
-    // println!("{}", proxies.len());
-    // for url in proxies {
-    //     manager.do_send(UrlMsg(url));
-    // }
-
     let server_db = db_saver.clone();
     let server_manager = manager.clone();
 
-    let server = ChatServer::default().start();
+    let rpc_server = RpcServer::default().start();
     let addr = net::SocketAddr::from_str(&server_host).unwrap();
     let listener = TcpListener::bind(&addr).unwrap();
 
-    Server::create(|ctx| {
+    TcpServer::create(|ctx| {
         ctx.add_message_stream(listener.incoming().map_err(|_| ()).map(|st| {
             let addr = st.peer_addr().unwrap();
             TcpConnect(st, addr)
         }));
-        Server {
-            chat: server,
+        TcpServer {
+            rpc_server,
             manager: server_manager,
-            db: server_db,
+            pg_db: server_db,
         }
     });
 

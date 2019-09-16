@@ -13,7 +13,6 @@ fn main() -> std::io::Result<()> {
     println!("Running chat client");
 
     actix::System::run(|| {
-        // Connect to server
         let addr = net::SocketAddr::from_str("127.0.0.1:17017").unwrap();
         Arbiter::spawn(
             TcpStream::connect(&addr)
@@ -26,7 +25,6 @@ fn main() -> std::io::Result<()> {
                         }
                     });
 
-                    // start console loop
                     thread::spawn(move || loop {
                         let mut cmd = String::new();
                         if io::stdin().read_line(&mut cmd).is_err() {
@@ -58,14 +56,12 @@ impl Actor for ChatClient {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Context<Self>) {
-        // start heartbeats otherwise server will disconnect after 10 seconds
         self.hb(ctx)
     }
 
     fn stopping(&mut self, _: &mut Context<Self>) -> Running {
         println!("Disconnected");
 
-        // Stop application on disconnect
         System::current().stop();
 
         Running::Stop
@@ -83,14 +79,12 @@ impl ChatClient {
 
 impl actix::io::WriteHandler<io::Error> for ChatClient {}
 
-/// Handle stdin commands
 impl Handler<ClientCommand> for ChatClient {
     type Result = ();
 
     fn handle(&mut self, msg: ClientCommand, _: &mut Context<Self>) {
         let m = msg.0.trim();
 
-        // we check for /sss type of messages
         if m.starts_with('/') {
             let v: Vec<&str> = m.splitn(2, ' ').collect();
             match v[0] {
@@ -106,7 +100,6 @@ impl Handler<ClientCommand> for ChatClient {
     }
 }
 
-/// Server communication
 impl StreamHandler<codec::RpcResponseC, io::Error> for ChatClient {
     fn handle(&mut self, msg: codec::RpcResponseC, _: &mut Context<Self>) {
         match msg {
@@ -143,7 +136,6 @@ pub enum RpcRequestC {
     Ping,
 }
 
-/// Server response
 #[derive(Serialize, Deserialize, Debug, Message)]
 #[serde(tag = "cmd", content = "data")]
 pub enum RpcResponseC {
@@ -151,7 +143,6 @@ pub enum RpcResponseC {
     Ping,
 }
 
-/// Codec for Client -> Server transport
 pub struct ChatCodec;
 
 impl Decoder for ChatCodec {
@@ -192,7 +183,6 @@ impl Encoder for ChatCodec {
     }
 }
 
-/// Codec for Server -> Client transport
 pub struct ClientChatCodec;
 
 impl Decoder for ClientChatCodec {

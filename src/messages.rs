@@ -1,10 +1,10 @@
 use actix::{Addr, Message};
 use serde::{Deserialize, Serialize};
-// use std::net::SocketAddr;
-// use tokio_tcp::{TcpStream};
+use std::net::SocketAddr;
+use tokio_tcp::TcpStream;
 
 use crate::proxy::Proxy;
-use crate::session::ChatSession;
+use crate::session::Session;
 use crate::worker::Worker;
 
 #[derive(Message)]
@@ -34,33 +34,18 @@ impl Message for UrlGetterMsg {
     type Result = Vec<String>;
 }
 
-/// Chat server sends this messages to session
-// #[derive(Message)]
-// pub struct ToSessionMessage(pub String);
-
-/// New chat session is created
 pub struct Connect {
-    pub addr: Addr<ChatSession>,
+    pub addr: Addr<Session>,
 }
 
-/// Response type for Connect message
-///
-/// Chat server returns unique session id
 impl Message for Connect {
     type Result = usize;
 }
 
-/// Session is disconnected
 #[derive(Message)]
 pub struct Disconnect {
     pub id: usize,
 }
 
-// /// Join room, if room does not exists create new one.
-// #[derive(Message)]
-// pub struct Join {
-//     /// Client id
-//     pub id: usize,
-//     /// Room name
-//     pub name: String,
-// }
+#[derive(Message)]
+pub struct TcpConnect(pub TcpStream, pub SocketAddr);
