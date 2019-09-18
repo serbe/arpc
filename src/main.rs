@@ -23,6 +23,7 @@ mod session;
 mod tcpserver;
 mod utils;
 mod worker;
+mod fwatcher;
 
 fn main() {
     dotenv().ok();
