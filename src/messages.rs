@@ -1,6 +1,7 @@
+use std::net::SocketAddr;
+
 use actix::{Addr, Message};
 use serde::{Deserialize, Serialize};
-use std::net::SocketAddr;
 use tokio_tcp::TcpStream;
 
 use crate::proxy::Proxy;

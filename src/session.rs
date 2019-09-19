@@ -1,11 +1,12 @@
+use std::io;
+use std::time::{Duration, Instant};
+
 use actix::fut::ok;
 use actix::io::{FramedWrite, WriteHandler};
 use actix::{
     Actor, ActorContext, ActorFuture, Addr, AsyncContext, Context, ContextFutureSpawner, Running,
     StreamHandler, WrapFuture,
 };
-use std::io;
-use std::time::{Duration, Instant};
 use tokio_io::io::WriteHalf;
 use tokio_tcp::TcpStream;
 

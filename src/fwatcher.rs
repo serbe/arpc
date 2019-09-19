@@ -1,9 +1,10 @@
-use actix::{Actor, AsyncContext, Addr, Context};
 use std::time::Duration;
-use std::path::Path;
-use std::fs::{read_dir, DirEntry};
+
+use actix::{Actor, Addr, AsyncContext, Context};
 
 use crate::manager::Manager;
+use crate::messages::UrlMsg;
+use crate::utils::urls_from_dir;
 
 pub struct FWatcher {
     manager: Addr<Manager>,
@@ -11,9 +12,7 @@ pub struct FWatcher {
 
 impl FWatcher {
     pub fn new(manager: Addr<Manager>) -> Self {
-        FWatcher {
-            manager,
-        }
+        FWatcher { manager }
     }
 }
 
@@ -22,14 +21,9 @@ impl Actor for FWatcher {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         ctx.run_interval(Duration::from_secs(42), move |act, _ctx| {
-            let path = Path::new("./watch/");
-            if path.is_dir() {
-                if let Ok(dir) = read_dir(path) {
-                    for entry in dir {
-                        if let Ok(entry) = entry {
-                            let _path = entry.path();
-                        }
-                    }
+            if let Ok(urls) = urls_from_dir() {
+                for url in urls {
+                    act.manager.do_send(UrlMsg(url));
                 }
             }
         });

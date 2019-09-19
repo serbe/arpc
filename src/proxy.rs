@@ -1,6 +1,7 @@
+use std::time::Instant;
+
 use chrono::{DateTime, Local};
 use reqwest::Client;
-use std::time::Instant;
 
 #[derive(Clone, Debug)]
 pub struct Proxy {

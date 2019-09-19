@@ -1,9 +1,10 @@
+use std::io;
+
 use actix::Message;
 use byteorder::{BigEndian, ByteOrder};
 use bytes::{BufMut, BytesMut};
 use serde::{Deserialize, Serialize};
 use serde_json as json;
-use std::io;
 use tokio_io::codec::{Decoder, Encoder};
 
 use crate::messages::UrlGetterMsg;

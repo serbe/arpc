@@ -1,6 +1,7 @@
+use std::collections::HashMap;
+
 use actix::{Actor, Addr, Context, Handler};
 use rand::{self, Rng};
-use std::collections::HashMap;
 
 use crate::messages::{Connect, Disconnect};
 use crate::session::Session;

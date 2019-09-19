@@ -1,6 +1,6 @@
 [package]
 name = "arpc"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Valeriy Kostikov <mkoctuk@gmail.com>"]
 edition = "2018"
 
@@ -25,3 +25,4 @@ sled = "0.28"
 tokio-codec = "0.1"
 tokio-io = "0.1"
 tokio-tcp = "0.1"
+regex = "1.3"

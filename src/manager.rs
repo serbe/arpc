@@ -1,8 +1,9 @@
+use std::time::Duration;
+
 use actix::{Actor, Addr, AsyncContext, Context, Handler, System};
 use crossbeam_queue::SegQueue;
 use dotenv::var;
 use sled::Db;
-use std::time::Duration;
 
 use crate::messages::{UrlMsg, Waiting, WorkersAddr};
 use crate::worker::Worker;

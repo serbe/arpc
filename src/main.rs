@@ -1,19 +1,22 @@
+use std::net;
+use std::str::FromStr;
+
 use actix::{Actor, AsyncContext, SyncArbiter, System};
 use dotenv::{dotenv, var};
 use futures::Stream;
-use std::net;
-use std::str::FromStr;
 use tokio_tcp::TcpListener;
 
+use crate::fwatcher::FWatcher;
 use crate::manager::Manager;
 use crate::messages::{TcpConnect, WorkersAddr};
 use crate::pgdb::{get_connection, PgDb};
 use crate::rpcserver::RpcServer;
 use crate::tcpserver::TcpServer;
-use crate::utils::my_ip;
+use crate::utils::{create_dir_watch, my_ip};
 use crate::worker::Worker;
 
 mod codec;
+mod fwatcher;
 mod manager;
 mod messages;
 mod pgdb;
@@ -23,10 +26,10 @@ mod session;
 mod tcpserver;
 mod utils;
 mod worker;
-mod fwatcher;
 
 fn main() {
     dotenv().ok();
+    create_dir_watch();
     let my_ip = my_ip().unwrap();
     let target = var("TARGET").expect("TARGET must be set");
     let num_workers = var("WORKERS")
@@ -36,10 +39,10 @@ fn main() {
     let server_host = var("SERVER").expect("SERVER must be set");
     let sys = System::new("actix");
     let pool = get_connection();
-    let db_saver = PgDb::new(pool.clone()).start();
+    let pg_db = PgDb::new(pool.clone()).start();
     let manager = Manager::new().start();
     let worker_manager = manager.clone();
-    let worker_db = db_saver.clone();
+    let worker_db = pg_db.clone();
     let workers = SyncArbiter::start(num_workers, move || {
         Worker::new(
             worker_manager.clone(),
@@ -50,8 +53,7 @@ fn main() {
     });
     manager.do_send(WorkersAddr(workers));
 
-    let server_db = db_saver.clone();
-    let server_manager = manager.clone();
+    let _ = FWatcher::new(manager.clone()).start();
 
     let rpc_server = RpcServer::default().start();
     let addr = net::SocketAddr::from_str(&server_host).unwrap();
@@ -64,8 +66,8 @@ fn main() {
         }));
         TcpServer {
             rpc_server,
-            manager: server_manager,
-            pg_db: server_db,
+            manager,
+            pg_db,
         }
     });
 
