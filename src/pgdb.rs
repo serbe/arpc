@@ -1,5 +1,6 @@
 use actix::{Actor, Context, Handler, MessageResult};
 use dotenv::var;
+use log::{info, warn};
 use postgres::Connection;
 use r2d2::Pool;
 use r2d2_postgres::{PostgresConnectionManager, TlsMode};
@@ -28,13 +29,13 @@ impl Handler<ProxyMsg> for PgDb {
         match insert_or_update(&self.db.get().unwrap(), msg.0.clone()) {
             Ok(_num) => {
                 if msg.0.work {
-                    println!(
+                    info!(
                         "{} work={} anon={} response={}",
                         msg.0.hostname, msg.0.work, msg.0.anon, msg.0.response
                     )
                 }
             }
-            Err(err) => println!("error in db {}", err),
+            Err(err) => warn!("error in db {}", err),
         }
     }
 }

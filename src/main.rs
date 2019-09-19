@@ -1,9 +1,12 @@
+use std::env::set_var;
 use std::net;
 use std::str::FromStr;
 
 use actix::{Actor, AsyncContext, SyncArbiter, System};
 use dotenv::{dotenv, var};
+use futures::future::Future;
 use futures::Stream;
+use log::info;
 use tokio_tcp::TcpListener;
 
 use crate::fwatcher::FWatcher;
@@ -28,8 +31,11 @@ mod utils;
 mod worker;
 
 fn main() {
+    set_var("RUST_LOG", "info");
     dotenv().ok();
+    env_logger::init();
     create_dir_watch();
+    info!("app started");
     let my_ip = my_ip().unwrap();
     let target = var("TARGET").expect("TARGET must be set");
     let num_workers = var("WORKERS")
@@ -71,16 +77,16 @@ fn main() {
         }
     });
 
-    // let ctrl_c = tokio_signal::ctrl_c().flatten_stream();
-    // let handle_shutdown = ctrl_c
-    //     .for_each(|()| {
-    //         println!("Ctrl-C received, shutting down");
-    //         System::current().stop();
-    //         Ok(())
-    //     })
-    //     .map_err(|_| ());
+    let ctrl_c = tokio_signal::ctrl_c().flatten_stream();
+    let handle_shutdown = ctrl_c
+        .for_each(|()| {
+            println!("Ctrl-C received, shutting down");
+            System::current().stop();
+            Ok(())
+        })
+        .map_err(|_| ());
 
-    // actix::spawn(handle_shutdown);
+    actix::spawn(handle_shutdown);
 
     let _ = sys.run();
 }
