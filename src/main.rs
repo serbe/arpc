@@ -1,4 +1,3 @@
-use std::env::set_var;
 use std::net;
 use std::str::FromStr;
 
@@ -31,7 +30,7 @@ mod utils;
 mod worker;
 
 fn main() {
-    set_var("RUST_LOG", "info");
+    // set_var("RUST_LOG", "info");
     dotenv().ok();
     env_logger::init();
     create_dir_watch();
