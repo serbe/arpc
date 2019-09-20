@@ -85,6 +85,11 @@ impl StreamHandler<RpcRequestC, io::Error> for Session {
                     ok(())
                 })
                 .wait(ctx),
+            RpcRequestC::Paste(url_paster) => {
+                for url in url_paster.urls {
+                    self.manager.do_send(UrlMsg(url));
+                }
+            }
             RpcRequestC::Ping => self.hb = Instant::now(),
         }
     }

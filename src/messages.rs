@@ -50,3 +50,8 @@ pub struct Disconnect {
 
 #[derive(Message)]
 pub struct TcpConnect(pub TcpStream, pub SocketAddr);
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct UrlPasterMsg {
+    pub urls: Vec<String>,
+}

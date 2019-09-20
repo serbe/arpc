@@ -7,13 +7,14 @@ use serde::{Deserialize, Serialize};
 use serde_json as json;
 use tokio_io::codec::{Decoder, Encoder};
 
-use crate::messages::UrlGetterMsg;
+use crate::messages::{UrlGetterMsg, UrlPasterMsg};
 
 #[derive(Serialize, Deserialize, Debug, Message)]
 #[serde(tag = "cmd", content = "data")]
 pub enum RpcRequestC {
     Check(UrlGetterMsg),
     Get(UrlGetterMsg),
+    Paste(UrlPasterMsg),
     Ping,
 }
 
