@@ -24,11 +24,11 @@ impl Proxy {
         let raw = s;
 
         if raw.contains('#') {
-            Err(format!("hostname contain fragment {}", raw))?
+            return Err(format!("hostname contain fragment {}", raw));
         }
 
         if raw.contains('?') {
-            Err(format!("hostname contain query {}", raw))?
+            return Err(format!("hostname contain query {}", raw));
         }
 
         let (raw, scheme) = if let Some(pos) = raw.find("://") {
@@ -40,15 +40,15 @@ impl Proxy {
                     .to_string(),
             )
         } else {
-            Err(format!("hostname not contain scheme {}", raw))?
+            return Err(format!("hostname not contain scheme {}", raw));
         };
 
         if raw.contains('@') {
-            Err(format!("user info in hostname not supported {}", raw))?
+            return Err(format!("user info in hostname not supported {}", raw));
         };
 
         if raw.contains('/') {
-            Err(format!("{} hostname contain path {}", s, raw))?
+            return Err(format!("{} hostname contain path {}", s, raw));
         };
 
         let (host, port) = if let Some(pos) = raw.rfind(':') {
@@ -64,10 +64,10 @@ impl Proxy {
                                 .to_string(),
                         )
                     } else {
-                        Err(format!("not parse ipv6 {}", raw))?
+                        return Err(format!("not parse ipv6 {}", raw));
                     }
                 } else {
-                    Err(format!("not parse ipv6 {}", raw))?
+                    return Err(format!("not parse ipv6 {}", raw));
                 }
             } else {
                 (
@@ -80,7 +80,7 @@ impl Proxy {
                 )
             }
         } else {
-            Err(format!("not parse port {}", raw))?
+            return Err(format!("not parse port {}", raw));
         };
 
         let _ = port

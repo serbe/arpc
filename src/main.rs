@@ -79,7 +79,7 @@ fn main() {
     let ctrl_c = tokio_signal::ctrl_c().flatten_stream();
     let handle_shutdown = ctrl_c
         .for_each(|()| {
-            println!("Ctrl-C received, shutting down");
+            info!("Ctrl-C received, shutting down");
             System::current().stop();
             Ok(())
         })

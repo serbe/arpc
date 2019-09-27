@@ -4,7 +4,7 @@ use actix::Message;
 use byteorder::{BigEndian, ByteOrder};
 use bytes::{BufMut, BytesMut};
 use serde::{Deserialize, Serialize};
-use serde_json as json;
+use serde_json::{from_slice, to_string};
 use tokio_io::codec::{Decoder, Encoder};
 
 use crate::messages::{UrlGetterMsg, UrlPasterMsg};
@@ -42,7 +42,7 @@ impl Decoder for ToServerCodec {
         if src.len() >= size + 2 {
             src.split_to(2);
             let buf = src.split_to(size);
-            Ok(Some(json::from_slice::<RpcRequestC>(&buf)?))
+            Ok(Some(from_slice::<RpcRequestC>(&buf)?))
         } else {
             Ok(None)
         }
@@ -54,7 +54,7 @@ impl Encoder for ToServerCodec {
     type Error = io::Error;
 
     fn encode(&mut self, msg: RpcResponseC, dst: &mut BytesMut) -> Result<(), Self::Error> {
-        let msg = json::to_string(&msg).unwrap();
+        let msg = to_string(&msg).unwrap();
         let msg_ref: &[u8] = msg.as_ref();
 
         dst.reserve(msg_ref.len() + 2);

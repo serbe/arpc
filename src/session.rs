@@ -1,12 +1,13 @@
 use std::io;
 use std::time::{Duration, Instant};
 
-use actix::fut::ok;
-use actix::io::{FramedWrite, WriteHandler};
 use actix::{
+    fut::ok,
+    io::{FramedWrite, WriteHandler},
     Actor, ActorContext, ActorFuture, Addr, AsyncContext, Context, ContextFutureSpawner, Running,
     StreamHandler, WrapFuture,
 };
+use log::info;
 use tokio_io::io::WriteHalf;
 use tokio_tcp::TcpStream;
 
@@ -64,7 +65,7 @@ impl StreamHandler<RpcRequestC, io::Error> for Session {
                 .then(|res, act, _| {
                     match res {
                         Ok(url_list) => act.framed.write(RpcResponseC::Proxy(url_list)),
-                        _ => println!("Something is wrong"),
+                        _ => info!("Something is wrong"),
                     }
                     ok(())
                 })
@@ -80,7 +81,7 @@ impl StreamHandler<RpcRequestC, io::Error> for Session {
                                 act.manager.do_send(UrlMsg(url));
                             }
                         }
-                        _ => println!("Something is wrong"),
+                        _ => info!("Something is wrong"),
                     }
                     ok(())
                 })
@@ -115,7 +116,7 @@ impl Session {
     fn hb(&self, ctx: &mut Context<Self>) {
         ctx.run_later(Duration::new(1, 0), |act, ctx| {
             if Instant::now().duration_since(act.hb) > Duration::new(10, 0) {
-                println!("Client heartbeat failed, disconnecting!");
+                info!("Client heartbeat failed, disconnecting!");
 
                 act.rpc_server.do_send(Disconnect { id: act.id });
 
