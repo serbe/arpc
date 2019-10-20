@@ -1,7 +1,6 @@
 use std::time::Instant;
 
 use chrono::{DateTime, Local};
-use reqwest::Client;
 
 #[derive(Clone, Debug)]
 pub struct Proxy {
@@ -107,13 +106,14 @@ impl Proxy {
 pub fn check_proxy(proxy: Proxy, target_url: &str, my_ip: &str) -> Result<Proxy, String> {
     let dur = Instant::now();
     let mut proxy = proxy;
-    let transport = reqwest::Proxy::all(&proxy.hostname)
+    let mut client = rp_client::client::Client::new(target_url)
+        .proxy(proxy.hostname.clone())
+        .build()
         .map_err(|e| format!("set proxy {} error: {}", &proxy.hostname, e.to_string()))?;
-    let client = Client::builder().proxy(transport).build().unwrap();
-    let body = client
-        .get(target_url)
+    client
         .send()
-        .map_err(|e| format!("get via {} {}", &proxy.hostname, e.to_string()))?
+        .map_err(|e| format!("get via {} {}", &proxy.hostname, e.to_string()))?;
+    let body = client
         .text()
         .map_err(|e| format!("convert to text error {}", e.to_string()))?;
     proxy.work = true;
@@ -121,5 +121,6 @@ pub fn check_proxy(proxy: Proxy, target_url: &str, my_ip: &str) -> Result<Proxy,
         proxy.anon = true;
     }
     proxy.response = dur.elapsed().as_micros() as i64;
+    println!("{} {} {}", proxy.hostname, proxy.anon, proxy.response);
     Ok(proxy)
 }

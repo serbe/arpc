@@ -36,6 +36,7 @@ fn main() {
     create_dir_watch();
     info!("app started");
     let my_ip = my_ip().unwrap();
+    println!("{}", &my_ip);
     let target = var("TARGET").expect("TARGET must be set");
     let num_workers = var("WORKERS")
         .expect("WORKERS must be set")

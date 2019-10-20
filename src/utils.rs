@@ -3,9 +3,12 @@ use std::io::{BufRead, BufReader, Error, ErrorKind, Result as IoResult};
 use std::path::Path;
 
 use regex::Regex;
+use rp_client::error::Error as RError;
 
-pub fn my_ip() -> Result<String, reqwest::Error> {
-    reqwest::get("https://api.ipify.org")?.text()
+pub fn my_ip() -> Result<String, RError> {
+    let mut client = rp_client::client::Client::new("https://api.ipify.org").build()?;
+    client.send()?;
+    client.text()
 }
 
 pub fn urls_from_dir() -> IoResult<Vec<String>> {
