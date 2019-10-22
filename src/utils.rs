@@ -30,21 +30,17 @@ pub fn urls_from_dir() -> IoResult<Vec<String>> {
 }
 
 fn parge_origins(line: String) -> IoResult<Vec<String>> {
-    let re = Regex::new(r"(?i)(https|http|socks5).+?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{1,5})")
+    let re = Regex::new(r"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{1,5})")
         .map_err(|e| Error::new(ErrorKind::InvalidData, e.to_string()))?;
     let mut origins = Vec::new();
     for caps in re.captures_iter(&line) {
-        let url = format!(
-            "{}://{}",
-            caps.get(1)
-                .ok_or_else(|| Error::new(ErrorKind::InvalidData, "error schema"))?
-                .as_str()
-                .to_lowercase(),
-            caps.get(2)
-                .ok_or_else(|| Error::new(ErrorKind::InvalidData, "error ip port"))?
-                .as_str()
-        );
-        origins.push(url);
+        let addr = caps
+            .get(1)
+            .ok_or_else(|| Error::new(ErrorKind::InvalidData, "error ip:port"))?
+            .as_str();
+        origins.push(format!("http://{}", addr));
+        origins.push(format!("https://{}", addr));
+        origins.push(format!("socks5://{}", addr));
     }
     Ok(origins)
 }
