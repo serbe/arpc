@@ -55,19 +55,44 @@ pub fn get_connection() -> Pool<PostgresConnectionManager> {
     Pool::new(manager).expect("error create r2d2 pool")
 }
 
-pub fn insert_or_update(conn: &Connection, proxy: Proxy) -> Result<u64, String> {
+pub fn insert_or_update(conn: &Connection, proxy: Proxy) -> Result<u64, postgres::Error> {
+    let next = &proxy.checks + 1;
     conn.execute(
         "INSERT INTO
-            proxies (work, anon, checks, hostname, host, port, scheme, create_at, update_at, response)
+            proxies (
+                hostname,
+                scheme,
+                host,
+                port,
+                work,
+                anon,
+                response,
+                checks,
+                create_at,
+                update_at
+            )
         VALUES
             ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         ON CONFLICT
             (hostname)
         DO UPDATE SET
-            (work, anon, checks, update_at, response) =
-            ($1, $2, $3 + 1, $9, $10)
+            (work, anon, response, checks, update_at) =
+            ($5, $6, $7, $11, $10)
         ",
-        &[&proxy.work, &proxy.anon, &proxy.checks, &proxy.hostname, &proxy.host, &proxy.port, &proxy.scheme, &proxy.create_at, &proxy.update_at, &proxy.response]).map_err(|e| format!("error insert {}", e.to_string()))
+        &[
+            &proxy.hostname,
+            &proxy.scheme,
+            &proxy.host,
+            &proxy.port,
+            &proxy.work,
+            &proxy.anon,
+            &proxy.response,
+            &proxy.checks,
+            &proxy.create_at,
+            &proxy.update_at,
+            &next,
+        ],
+    )
 }
 
 pub fn get_list(conn: &Connection, msg: UrlGetterMsg) -> Vec<String> {
