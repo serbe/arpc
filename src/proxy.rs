@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use chrono::{DateTime, Local};
+use chrono::{Local, NaiveDateTime};
 use reqwest::Client;
 
 #[derive(Clone, Debug)]
@@ -12,10 +12,10 @@ pub struct Proxy {
     pub checks: i32,
     pub hostname: String,
     pub host: String,
-    pub port: String,
+    pub port: i32,
     pub scheme: String,
-    pub create_at: DateTime<Local>,
-    pub update_at: DateTime<Local>,
+    pub create_at: NaiveDateTime,
+    pub update_at: NaiveDateTime,
     pub response: i64,
 }
 
@@ -51,7 +51,7 @@ impl Proxy {
             return Err(format!("{} hostname contain path {}", s, raw));
         };
 
-        let (host, port) = if let Some(pos) = raw.rfind(':') {
+        let (host, s_port) = if let Some(pos) = raw.rfind(':') {
             if let Some(start) = raw.find('[') {
                 if let Some(end) = raw.find(']') {
                     if start == 0 && pos == end + 1 {
@@ -83,9 +83,12 @@ impl Proxy {
             return Err(format!("not parse port {}", raw));
         };
 
-        let _ = port
-            .parse::<u32>()
-            .map_err(|_| format!("not parse port {}", port))?;
+        let port = s_port
+            .parse::<i32>()
+            .map_err(|_| format!("not parse port {}", s_port))?;
+        if port < 0 || port > 65535 {
+            return Err("wrong port".to_string());
+        }
 
         Ok(Proxy {
             insert: false,
@@ -93,12 +96,12 @@ impl Proxy {
             work: false,
             anon: false,
             checks: 0,
-            hostname: format!("{}://{}:{}", scheme, host, port),
+            hostname: format!("{}://{}:{}", scheme, host, s_port),
             host,
             port,
             scheme,
-            create_at: chrono::Local::now(),
-            update_at: chrono::Local::now(),
+            create_at: Local::now().naive_local(),
+            update_at: Local::now().naive_local(),
             response: 0,
         })
     }
@@ -110,10 +113,14 @@ pub fn check_proxy(proxy: Proxy, target_url: &str, my_ip: &str) -> Result<Proxy,
     let transport = reqwest::Proxy::all(&proxy.hostname)
         .map_err(|e| format!("set proxy {} error: {}", &proxy.hostname, e.to_string()))?;
     let client = Client::builder().proxy(transport).build().unwrap();
-    let body = client
+    let mut response = client
         .get(target_url)
         .send()
-        .map_err(|e| format!("get via {} {}", &proxy.hostname, e.to_string()))?
+        .map_err(|e| format!("get via {} {}", &proxy.hostname, e.to_string()))?;
+    if !response.status().is_success() {
+        return Err("Bad status code".to_string());
+    }
+    let body = response
         .text()
         .map_err(|e| format!("convert to text error {}", e.to_string()))?;
     proxy.work = true;
