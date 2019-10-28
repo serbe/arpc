@@ -2,10 +2,13 @@ use std::fs::{create_dir, read_dir, remove_file, File};
 use std::io::{BufRead, BufReader, Error, ErrorKind, Result as IoResult};
 use std::path::Path;
 
+use rp_client::{error::Error as RpError, client::Client};
 use regex::Regex;
 
-pub fn my_ip() -> Result<String, reqwest::Error> {
-    reqwest::get("https://api.ipify.org")?.text()
+pub fn my_ip() -> Result<String, RpError> {
+    let mut client = Client::new("https://api.ipify.org").build()?;
+    client.send()?;
+    client.text()
 }
 
 pub fn urls_from_dir() -> IoResult<Vec<String>> {

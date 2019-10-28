@@ -30,7 +30,6 @@ mod utils;
 mod worker;
 
 fn main() {
-    // set_var("RUST_LOG", "info");
     dotenv().ok();
     env_logger::init();
     create_dir_watch();

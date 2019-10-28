@@ -13,3 +13,5 @@ CREATE TABLE IF NOT EXISTS
         update_at TIMESTAMP without time zone DEFAULT now(),
         UNIQUE (hostname)
     );
+
+ALTER TABLE proxies OWNER TO username;
