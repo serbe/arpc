@@ -2,8 +2,8 @@ use std::fs::{create_dir, read_dir, remove_file, File};
 use std::io::{BufRead, BufReader, Error, ErrorKind, Result as IoResult};
 use std::path::Path;
 
-use rp_client::{error::Error as RpError, client::Client};
 use regex::Regex;
+use rp_client::{client::Client, error::Error as RpError};
 
 pub fn my_ip() -> Result<String, RpError> {
     let mut client = Client::new("https://api.ipify.org").build()?;

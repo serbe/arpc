@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use chrono::{Local, NaiveDateTime};
-use rp_client::{error::Error as RpError, client::Client};
+use rp_client::{client::Client, error::Error as RpError};
 
 #[derive(Clone, Debug)]
 pub struct Proxy {

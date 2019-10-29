@@ -2,15 +2,15 @@ use std::time::Duration;
 
 use actix::{Actor, Addr, AsyncContext, Context, Handler, System};
 use crossbeam_queue::SegQueue;
-use dotenv::var;
-use sled::Db;
+// use dotenv::var;
+// use sled::Db;
 
 use crate::messages::{UrlMsg, Waiting, WorkersAddr};
 use crate::worker::Worker;
 
 pub struct Manager {
     sq: SegQueue<String>,
-    sled_db: Db,
+    // sled_db: Db,
     workers: Option<Addr<Worker>>,
     free_workers: usize,
 }
@@ -24,11 +24,11 @@ impl Default for Manager {
 impl Manager {
     pub fn new() -> Self {
         let sq = SegQueue::new();
-        let sled_db_name = var("SLED").expect("SLED must be set");
-        let sled_db = Db::open(sled_db_name).unwrap();
+        // let sled_db_name = var("SLED").expect("SLED must be set");
+        // let sled_db = Db::open(sled_db_name).unwrap();
         Manager {
             sq,
-            sled_db,
+            // sled_db,
             workers: None,
             free_workers: 0,
         }
@@ -42,12 +42,12 @@ impl Actor for Manager {
         ctx.run_interval(Duration::from_millis(51), move |act, _ctx| {
             if !act.sq.is_empty() && act.free_workers > 0 {
                 let url = act.sq.pop().unwrap();
-                if act.sled_db.insert(url.clone(), b"") == Ok(None) {
-                    if let Some(workers) = &act.workers {
-                        act.free_workers -= 1;
-                        workers.do_send(UrlMsg(url));
-                    }
+                // if act.sled_db.insert(url.clone(), b"") == Ok(None) {
+                if let Some(workers) = &act.workers {
+                    act.free_workers -= 1;
+                    workers.do_send(UrlMsg(url));
                 }
+                // }
             }
         });
     }
