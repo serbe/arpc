@@ -29,7 +29,8 @@ mod tcpserver;
 mod utils;
 mod worker;
 
-fn main() {
+#[actix_rt::main]
+async fn main() -> std::io::Result<()> {
     dotenv().ok();
     env_logger::init();
     create_dir_watch();
@@ -75,16 +76,16 @@ fn main() {
         }
     });
 
-    let ctrl_c = tokio_signal::ctrl_c().flatten_stream();
-    let handle_shutdown = ctrl_c
-        .for_each(|()| {
-            info!("Ctrl-C received, shutting down");
-            System::current().stop();
-            Ok(())
-        })
-        .map_err(|_| ());
+    // let ctrl_c = tokio_signal::ctrl_c().flatten_stream();
+    // let handle_shutdown = ctrl_c
+    //     .for_each(|()| {
+    //         info!("Ctrl-C received, shutting down");
+    //         System::current().stop();
+    //         Ok(())
+    //     })
+    //     .map_err(|_| ());
 
-    actix::spawn(handle_shutdown);
+    // actix::spawn(handle_shutdown);
 
     let _ = sys.run();
 }
