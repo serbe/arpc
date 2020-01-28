@@ -3,13 +3,14 @@ use std::io;
 use actix::Message;
 use byteorder::{BigEndian, ByteOrder};
 use bytes::{BufMut, BytesMut};
-use serde::{Deserialize, Serialize};
+use serde_derive::{Deserialize, Serialize};
 use serde_json::{from_slice, to_string};
-use tokio_io::codec::{Decoder, Encoder};
+use tokio_util::codec::{Decoder, Encoder};
 
 use crate::messages::{UrlGetterMsg, UrlPasterMsg};
 
 #[derive(Serialize, Deserialize, Debug, Message)]
+#[rtype(result = "()")]
 #[serde(tag = "cmd", content = "data")]
 pub enum RpcRequestC {
     Check(UrlGetterMsg),
@@ -19,12 +20,14 @@ pub enum RpcRequestC {
 }
 
 #[derive(Serialize, Deserialize, Debug, Message)]
+#[rtype(result = "()")]
 #[serde(tag = "cmd", content = "data")]
 pub enum RpcResponseC {
     Proxy(Vec<String>),
     Ping,
 }
 
+/// Codec for Client -> Server transport
 pub struct ToServerCodec;
 
 impl Decoder for ToServerCodec {

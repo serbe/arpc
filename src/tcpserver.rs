@@ -1,7 +1,7 @@
 use actix::io::FramedWrite;
 use actix::{Actor, Addr, Context, Handler, StreamHandler};
-use tokio_codec::FramedRead;
-use tokio_io::AsyncRead;
+use tokio_util::codec::FramedRead;
+// use tokio_io::AsyncRead;
 
 use crate::codec::ToServerCodec;
 use crate::manager::Manager;

@@ -6,7 +6,7 @@ use dotenv::{dotenv, var};
 use futures::future::Future;
 use futures::Stream;
 use log::info;
-use tokio_tcp::TcpListener;
+use tokio::net::{TcpListener, TcpStream};
 
 use crate::fwatcher::FWatcher;
 use crate::manager::Manager;
@@ -30,7 +30,7 @@ mod utils;
 mod worker;
 
 #[actix_rt::main]
-async fn main() -> std::io::Result<()> {
+async fn main() {
     dotenv().ok();
     env_logger::init();
     create_dir_watch();

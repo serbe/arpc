@@ -1,26 +1,31 @@
 use std::net::SocketAddr;
 
 use actix::{Addr, Message};
-use serde::{Deserialize, Serialize};
-use tokio_tcp::TcpStream;
+use serde_derive::{Deserialize, Serialize};
+use tokio::net::{TcpStream};
 
 use crate::proxy::Proxy;
 use crate::session::Session;
 use crate::worker::Worker;
 
 #[derive(Message)]
+#[rtype(result = "()")]
 pub struct UrlMsg(pub String);
 
 #[derive(Message)]
+#[rtype(result = "()")]
 pub struct QuitMsg;
 
 #[derive(Message)]
+#[rtype(result = "()")]
 pub struct Waiting;
 
 #[derive(Message)]
+#[rtype(result = "()")]
 pub struct ProxyMsg(pub Proxy);
 
 #[derive(Message)]
+#[rtype(result = "()")]
 pub struct WorkersAddr(pub Addr<Worker>);
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -44,11 +49,13 @@ impl Message for Connect {
 }
 
 #[derive(Message)]
+#[rtype(result = "()")]
 pub struct Disconnect {
     pub id: usize,
 }
 
 #[derive(Message)]
+#[rtype(result = "()")]
 pub struct TcpConnect(pub TcpStream, pub SocketAddr);
 
 #[derive(Serialize, Deserialize, Debug)]

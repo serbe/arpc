@@ -8,8 +8,8 @@ use actix::{
     StreamHandler, WrapFuture,
 };
 use log::info;
-use tokio_io::io::WriteHalf;
-use tokio_tcp::TcpStream;
+use tokio::io::WriteHalf;
+use tokio::net::TcpStream;
 
 use crate::codec::{RpcRequestC, RpcResponseC, ToServerCodec};
 use crate::manager::Manager;
