@@ -11,7 +11,7 @@ use tokio::net::{TcpListener, TcpStream};
 use crate::fwatcher::FWatcher;
 use crate::manager::Manager;
 use crate::messages::{TcpConnect, WorkersAddr};
-use crate::pgdb::{get_connection, PgDb};
+use crate::pgdb::{PgConnection};
 use crate::rpcserver::RpcServer;
 use crate::tcpserver::TcpServer;
 use crate::utils::{create_dir_watch, my_ip};
@@ -33,6 +33,7 @@ mod worker;
 async fn main() {
     dotenv().ok();
     env_logger::init();
+    let PG_URL = var("PG_URL").expect("PG_URL must be set");
     create_dir_watch();
     info!("app started");
     let my_ip = my_ip().unwrap();
@@ -43,8 +44,8 @@ async fn main() {
         .unwrap();
     let server_host = var("SERVER").expect("SERVER must be set");
     let sys = System::new("actix");
-    let pool = get_connection();
-    let pg_db = PgDb::new(pool.clone()).start();
+    // let pool = get_connection();
+    let pg_db = PgConnection::connect(DB_URL);
     let manager = Manager::new().start();
     let worker_manager = manager.clone();
     let worker_db = pg_db.clone();

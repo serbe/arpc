@@ -23,33 +23,33 @@ impl Actor for PgConnection  {
 
 impl PgConnection  {
     pub async fn connect(db_url: &str) -> Result<Addr<PgConnection>, io::Error> {
-        let (cl, conn) = connect(db_url, NoTls)
+        let (cl, _conn) = connect(db_url, NoTls)
             .await
             .expect("can not connect to postgresql");
-        actix_rt::spawn(conn.map(|_| ()));
+        // actix_rt::spawn(conn.map(|_| ()));
         Ok(PgConnection::create(move |_| PgConnection {
             cl,
         }))
     }
 }
 
-// impl Handler<ProxyMsg> for PgConnection {
-//     type Result = ();
+impl Handler<ProxyMsg> for PgConnection {
+    type Result = ();
 
-//     fn handle(&mut self, msg: ProxyMsg, _ctx: &mut Context<Self>) {
-//         match insert_or_update(&self.db.get().unwrap(), msg.0.clone()) {
-//             Ok(_num) => {
-//                 if msg.0.work {
-//                     info!(
-//                         "{} work={} anon={} response={}",
-//                         msg.0.hostname, msg.0.work, msg.0.anon, msg.0.response
-//                     )
-//                 }
-//             }
-//             Err(err) => warn!("error in db {}", err),
-//         }
-//     }
-// }
+    fn handle(&mut self, msg: ProxyMsg, _ctx: &mut Context<Self>) {
+        match insert_or_update(&self.cl, msg.0.clone()) {
+            Ok(_num) => {
+                if msg.0.work {
+                    info!(
+                        "{} work={} anon={} response={}",
+                        msg.0.hostname, msg.0.work, msg.0.anon, msg.0.response
+                    )
+                }
+            }
+            Err(err) => warn!("error in db {}", err),
+        }
+    }
+}
 
 // impl Handler<UrlGetterMsg> for PgConnection {
 //     type Result = MessageResult<UrlGetterMsg>;
@@ -66,91 +66,91 @@ impl PgConnection  {
 //     Pool::new(manager).expect("error create r2d2 pool")
 // }
 
-// pub fn insert_or_update(conn: &Connection, proxy: Proxy) -> Result<u64, postgres::Error> {
-//     let next = &proxy.checks + 1;
-//     conn.execute(
-//         "INSERT INTO
-//             proxies (
-//                 hostname,
-//                 scheme,
-//                 host,
-//                 port,
-//                 work,
-//                 anon,
-//                 response,
-//                 checks,
-//                 create_at,
-//                 update_at
-//             )
-//         VALUES
-//             ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-//         ON CONFLICT
-//             (hostname)
-//         DO UPDATE SET
-//             (work, anon, response, checks, update_at) =
-//             ($5, $6, $7, $11, $10)
-//         ",
-//         &[
-//             &proxy.hostname,
-//             &proxy.scheme,
-//             &proxy.host,
-//             &proxy.port,
-//             &proxy.work,
-//             &proxy.anon,
-//             &proxy.response,
-//             &proxy.checks,
-//             &proxy.create_at,
-//             &proxy.update_at,
-//             &next,
-//         ],
-//     )
-// }
+pub fn insert_or_update(cl: &Client, proxy: Proxy) -> Result<u64, tokio_postgres::Error> {
+    let next = &proxy.checks + 1;
+    cl.execute(
+        "INSERT INTO
+            proxies (
+                hostname,
+                scheme,
+                host,
+                port,
+                work,
+                anon,
+                response,
+                checks,
+                create_at,
+                update_at
+            )
+        VALUES
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        ON CONFLICT
+            (hostname)
+        DO UPDATE SET
+            (work, anon, response, checks, update_at) =
+            ($5, $6, $7, $11, $10)
+        ",
+        &[
+            &proxy.hostname,
+            &proxy.scheme,
+            &proxy.host,
+            &proxy.port,
+            &proxy.work,
+            &proxy.anon,
+            &proxy.response,
+            &proxy.checks,
+            &proxy.create_at,
+            &proxy.update_at,
+            &next,
+        ],
+    )
+}
 
-// pub fn get_list(conn: &Connection, msg: UrlGetterMsg) -> Vec<String> {
-//     let mut proxies = Vec::new();
-//     let anon = match msg.anon {
-//         Some(value) => format!("AND anon = {}", value),
-//         None => String::new(),
-//     };
-//     let hours = match msg.hours {
-//         Some(value) => format!("AND update_at < (NOW() - interval '{} hour')", value),
-//         None => String::new(),
-//     };
-//     let query = format!(
-//         "SELECT
-//             hostname
-//         FROM
-//             proxies
-//         WHERE
-//             work = $1 {} {} AND random() < 0.01
-//         LIMIT $2",
-//         anon, hours
-//     );
-//     if let Ok(rows) = &conn.query(&query, &[&msg.work, &msg.limit]) {
-//         for row in rows {
-//             let hostname: String = row.get(0);
-//             proxies.push(hostname);
-//         }
-//     }
-//     proxies
-// }
+pub fn get_list(cl: &Client, msg: UrlGetterMsg) -> Vec<String> {
+    let mut proxies = Vec::new();
+    let anon = match msg.anon {
+        Some(value) => format!("AND anon = {}", value),
+        None => String::new(),
+    };
+    let hours = match msg.hours {
+        Some(value) => format!("AND update_at < (NOW() - interval '{} hour')", value),
+        None => String::new(),
+    };
+    let query = format!(
+        "SELECT
+            hostname
+        FROM
+            proxies
+        WHERE
+            work = $1 {} {} AND random() < 0.01
+        LIMIT $2",
+        anon, hours
+    );
+    if let Ok(rows) = &cl.query(&query, &[&msg.work, &msg.limit]) {
+        for row in rows {
+            let hostname: String = row.get(0);
+            proxies.push(hostname);
+        }
+    }
+    proxies
+}
 
-// pub fn get_work(conn: &Connection, num: i64) -> Vec<String> {
-//     let mut proxies = Vec::new();
-//     if let Ok(rows) = &conn.query(
-//         "SELECT
-//             hostname
-//         FROM
-//             proxies
-//         WHERE
-//             work = true AND update_at < (NOW() - interval '1 hour') AND random() < 0.01
-//         LIMIT $1",
-//         &[&num],
-//     ) {
-//         for row in rows {
-//             let hostname: String = row.get(0);
-//             proxies.push(hostname);
-//         }
-//     }
-//     proxies
-// }
+pub fn get_work(cl: &Client, num: i64) -> Vec<String> {
+    let mut proxies = Vec::new();
+    if let Ok(rows) = &cl.query(
+        "SELECT
+            hostname
+        FROM
+            proxies
+        WHERE
+            work = true AND update_at < (NOW() - interval '1 hour') AND random() < 0.01
+        LIMIT $1",
+        &[&num],
+    ) {
+        for row in rows {
+            let hostname: String = row.get(0);
+            proxies.push(hostname);
+        }
+    }
+    proxies
+}
