@@ -3,15 +3,15 @@ use std::str::FromStr;
 
 use actix::{Actor, AsyncContext, SyncArbiter, System};
 use dotenv::{dotenv, var};
-use futures::future::Future;
-use futures::Stream;
+// use futures::future::Future;
+// use futures::Stream;
 use log::info;
 use tokio::net::{TcpListener, TcpStream};
 
 use crate::fwatcher::FWatcher;
 use crate::manager::Manager;
 use crate::messages::{TcpConnect, WorkersAddr};
-use crate::pgdb::{PgConnection};
+use crate::pgdb::{PgDb};
 use crate::rpcserver::RpcServer;
 use crate::tcpserver::TcpServer;
 use crate::utils::{create_dir_watch, my_ip};
@@ -33,7 +33,6 @@ mod worker;
 async fn main() {
     dotenv().ok();
     env_logger::init();
-    let PG_URL = var("PG_URL").expect("PG_URL must be set");
     create_dir_watch();
     info!("app started");
     let my_ip = my_ip().unwrap();
@@ -45,7 +44,7 @@ async fn main() {
     let server_host = var("SERVER").expect("SERVER must be set");
     let sys = System::new("actix");
     // let pool = get_connection();
-    let pg_db = PgConnection::connect(DB_URL);
+    let pg_db = PgDb::connect().await.unwrap();
     let manager = Manager::new().start();
     let worker_manager = manager.clone();
     let worker_db = pg_db.clone();
@@ -63,10 +62,11 @@ async fn main() {
 
     let rpc_server = RpcServer::default().start();
     let addr = net::SocketAddr::from_str(&server_host).unwrap();
-    let listener = TcpListener::bind(&addr).unwrap();
+    let listener = Box::new(TcpListener::bind(&addr).await.unwrap());
 
-    TcpServer::create(|ctx| {
-        ctx.add_message_stream(listener.incoming().map_err(|_| ()).map(|st| {
+    TcpServer::create(move |ctx| {
+        ctx.add_message_stream(Box::leak(listener).incoming().map(|st| {
+            let st = st.unwrap();
             let addr = st.peer_addr().unwrap();
             TcpConnect(st, addr)
         }));

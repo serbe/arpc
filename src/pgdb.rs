@@ -1,39 +1,40 @@
-use actix::{Actor, Addr, Context, Handler, MessageResult};
+use actix::{Actor, Addr, Context, Handler};
 use dotenv::var;
 use log::{info, warn};
-use tokio_postgres::types::ToSql;
-use tokio_postgres::{connect, Client, NoTls, Statement};
+// use tokio_postgres::types::ToSql;
+use tokio_postgres::{connect, Client, NoTls};
+use anyhow::Error;
 // use postgres::Connection;
 // use r2d2::Pool;
 // use r2d2_postgres::{PostgresConnectionManager, TlsMode};
 
-use std::io;
+// use std::io;
 
 use crate::messages::{ProxyMsg, UrlGetterMsg};
 use crate::proxy::Proxy;
 
-pub struct PgConnection  {
+pub struct PgDb  {
     cl: Client,
     // pub db: Pool<PostgresConnectionManager>,
 }
 
-impl Actor for PgConnection  {
+impl Actor for PgDb  {
     type Context = Context<Self>;
 }
 
-impl PgConnection  {
-    pub async fn connect(db_url: &str) -> Result<Addr<PgConnection>, io::Error> {
-        let (cl, _conn) = connect(db_url, NoTls)
-            .await
-            .expect("can not connect to postgresql");
+impl PgDb  {
+    pub async fn connect() -> Result<Addr<PgDb>, Error> {
+        let db_url = var("DB").expect("db must be set");
+        let (cl, _conn) = connect(&db_url, NoTls)
+            .await?;
         // actix_rt::spawn(conn.map(|_| ()));
-        Ok(PgConnection::create(move |_| PgConnection {
+        Ok(PgDb::create(move |_| PgDb {
             cl,
         }))
     }
 }
 
-impl Handler<ProxyMsg> for PgConnection {
+impl Handler<ProxyMsg> for PgDb {
     type Result = ();
 
     fn handle(&mut self, msg: ProxyMsg, _ctx: &mut Context<Self>) {

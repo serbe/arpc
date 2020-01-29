@@ -1,4 +1,4 @@
-use std::io;
+// use std::io;
 use std::time::{Duration, Instant};
 
 use actix::{
@@ -10,6 +10,7 @@ use actix::{
 use log::info;
 use tokio::io::WriteHalf;
 use tokio::net::TcpStream;
+use anyhow::Error;
 
 use crate::codec::{RpcRequestC, RpcResponseC, ToServerCodec};
 use crate::manager::Manager;
@@ -53,9 +54,9 @@ impl Actor for Session {
     }
 }
 
-impl WriteHandler<io::Error> for Session {}
+impl WriteHandler<Error> for Session {}
 
-impl StreamHandler<RpcRequestC, io::Error> for Session {
+impl StreamHandler<RpcRequestC, Error> for Session {
     fn handle(&mut self, msg: RpcRequestC, ctx: &mut Self::Context) {
         match msg {
             RpcRequestC::Get(url_getter) => self
