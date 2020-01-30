@@ -58,23 +58,6 @@ pub struct Disconnect {
 #[rtype(result = "()")]
 pub struct TcpConnect(pub TcpStream, pub SocketAddr);
 
-impl Handler<TcpConnect> for Server {
-    /// this is response for message, which is defined by `ResponseType` trait
-    /// in this case we just return unit.
-    type Result = ();
-
-    fn handle(&mut self, msg: TcpConnect, _: &mut Context<Self>) {
-        // For each incoming connection we create `ChatSession` actor
-        // with out chat server address.
-        let server = self.chat.clone();
-        Session::create(move |ctx| {
-            let (r, w) = tokio::io::split(msg.0);
-            Session::add_stream(FramedRead::new(r, ChatCodec), ctx);
-            Session::new(server, actix::io::FramedWrite::new(w, ChatCodec, ctx))
-        });
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UrlPasterMsg {
     pub urls: Vec<String>,

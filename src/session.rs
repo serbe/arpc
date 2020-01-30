@@ -56,10 +56,10 @@ impl Actor for Session {
 
 impl WriteHandler<Error> for Session {}
 
-impl StreamHandler<RpcRequestC, Error> for Session {
-    fn handle(&mut self, msg: RpcRequestC, ctx: &mut Self::Context) {
+impl StreamHandler<Result<RpcRequestC, Error>> for Session {
+    fn handle(&mut self, msg: Result<RpcRequestC, Error>, ctx: &mut Self::Context) {
         match msg {
-            RpcRequestC::Get(url_getter) => self
+            Ok(RpcRequestC::Get(url_getter)) => self
                 .pg_db
                 .send(url_getter)
                 .into_actor(self)
@@ -71,7 +71,7 @@ impl StreamHandler<RpcRequestC, Error> for Session {
                     ok(())
                 })
                 .wait(ctx),
-            RpcRequestC::Check(url_getter) => self
+            Ok(RpcRequestC::Check(url_getter)) => self
                 .pg_db
                 .send(url_getter)
                 .into_actor(self)
@@ -87,12 +87,12 @@ impl StreamHandler<RpcRequestC, Error> for Session {
                     ok(())
                 })
                 .wait(ctx),
-            RpcRequestC::Paste(url_paster) => {
+            Ok(RpcRequestC::Paste(url_paster)) => {
                 for url in url_paster.urls {
                     self.manager.do_send(UrlMsg(url));
                 }
             }
-            RpcRequestC::Ping => self.hb = Instant::now(),
+            Ok(RpcRequestC::Ping) => self.hb = Instant::now(),
         }
     }
 }
